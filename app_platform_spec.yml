@@ -1,87 +1,57 @@
 # DigitalOcean App Platform Spec — OpenClaw 3-Agent SDR Architecture
-# Deploys 3 isolated agent workers on a single App Platform deployment
+# Source: github.com/Oncova/sdr-agent-gradient
 name: sdr-agent-openclaw
 
 region: tor
 
 workers:
-  # ─────────────────────────────────────────────────────
-  #  Agent 1: sdr-scraper — Lead Scraping & Enrichment
-  # ─────────────────────────────────────────────────────
+  # Agent 1: sdr-scraper — Lead Scraping & Enrichment
   - name: sdr-scraper
     instance_count: 1
     instance_size_slug: professional-xs
-    image:
-      registry_type: GHCR
-      registry: stevecharles
-      repository: sdr-agent-gradient
-      tag: scraper-latest
+    github:
+      repo: Oncova/sdr-agent-gradient
+      branch: main
+      deploy_on_push: true
+    build_command: pip install -r requirements.txt
+    run_command: python3 -c "from orchestrator import initialize_all_mcps; initialize_all_mcps()"
+    environment_slug: python
     envs:
       - key: AGENT_ROLE
         value: scraper
       - key: AGENT_MODEL
         value: openai-gpt-5.4
-      - key: VAULT_ADDR
-        value: ${VAULT_ADDR}
-        type: SECRET
-      - key: VAULT_TOKEN
-        value: ${VAULT_TOKEN}
-        type: SECRET
-      - key: DIGITALOCEAN_API_TOKEN
-        value: ${DIGITALOCEAN_API_TOKEN}
-        type: SECRET
-    run_command: python3 -m openclaw_sdk run --agent sdr-scraper --spec openclaw_agent_spec.yml
 
-  # ─────────────────────────────────────────────────────
-  #  Agent 2: sdr-pitcher — Pitch Generation & Delivery
-  # ─────────────────────────────────────────────────────
+  # Agent 2: sdr-pitcher — Pitch Generation & Delivery
   - name: sdr-pitcher
     instance_count: 1
     instance_size_slug: professional-xs
-    image:
-      registry_type: GHCR
-      registry: stevecharles
-      repository: sdr-agent-gradient
-      tag: pitcher-latest
+    github:
+      repo: Oncova/sdr-agent-gradient
+      branch: main
+      deploy_on_push: true
+    build_command: pip install -r requirements.txt
+    run_command: python3 -c "from main import generate_sdr_pitch; print('sdr-pitcher ready')"
+    environment_slug: python
     envs:
       - key: AGENT_ROLE
         value: pitcher
       - key: AGENT_MODEL
         value: openai-gpt-5.4
-      - key: VAULT_ADDR
-        value: ${VAULT_ADDR}
-        type: SECRET
-      - key: VAULT_TOKEN
-        value: ${VAULT_TOKEN}
-        type: SECRET
-      - key: DIGITALOCEAN_API_TOKEN
-        value: ${DIGITALOCEAN_API_TOKEN}
-        type: SECRET
-    run_command: python3 -m openclaw_sdk run --agent sdr-pitcher --spec openclaw_agent_spec.yml
 
-  # ─────────────────────────────────────────────────────
-  #  Agent 3: sdr-closer — Follow-Up & Closing
-  # ─────────────────────────────────────────────────────
+  # Agent 3: sdr-closer — Follow-Up & Closing
   - name: sdr-closer
     instance_count: 1
     instance_size_slug: professional-xs
-    image:
-      registry_type: GHCR
-      registry: stevecharles
-      repository: sdr-agent-gradient
-      tag: closer-latest
+    github:
+      repo: Oncova/sdr-agent-gradient
+      branch: main
+      deploy_on_push: true
+    build_command: pip install -r requirements.txt
+    run_command: python3 -c "from orchestrator import initialize_all_mcps; initialize_all_mcps()"
+    environment_slug: python
     envs:
       - key: AGENT_ROLE
         value: closer
       - key: AGENT_MODEL
         value: openai-gpt-5.4
-      - key: VAULT_ADDR
-        value: ${VAULT_ADDR}
-        type: SECRET
-      - key: VAULT_TOKEN
-        value: ${VAULT_TOKEN}
-        type: SECRET
-      - key: DIGITALOCEAN_API_TOKEN
-        value: ${DIGITALOCEAN_API_TOKEN}
-        type: SECRET
-    run_command: python3 -m openclaw_sdk run --agent sdr-closer --spec openclaw_agent_spec.yml

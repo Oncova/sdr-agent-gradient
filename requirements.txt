@@ -5,13 +5,10 @@ openai
 playwright
 temporalio
 datadog-api-client
-newrelic
-kafka-python
+newrelic-telemetry-sdk
+confluent-kafka
 redis
 python-owasp-zap-v2.4
-snyk
 cloudflare
 postmarker
-pandadoc-client
-mailreach
-lemonsqueezy
+pydantic

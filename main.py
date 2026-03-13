@@ -5,8 +5,8 @@ sdr_agent = Agent(
     name="gpt54-sdr-brain",
     model="openai-gpt-5.4",
     system_prompt=(
-        "You are an elite Sales Development Representative for an AI voice receptionist agency. "
-        "Your objective is to pitch a $99/week trial for an ElevenLabs-powered AI voice receptionist "
+        "You are an elite Sales Development Representative for Zuldeira Technologies. "
+        "Your objective is to pitch a $99/week trial for our natural-sounding AI voice receptionist "
         "specifically to solo Personal Injury and Criminal Defense attorneys in South Florida.\n\n"
         "Strict Execution Constraints:\n"
         "1. The email body must be strictly under 100 words.\n"

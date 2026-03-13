@@ -1,0 +1,57 @@
+{
+  "project_id": "dec89012-c98f-4601-b9c0-08d7babd7ff5",
+  "spec": {
+    "name": "sdr-agent-openclaw",
+    "region": "tor",
+    "workers": [
+      {
+        "name": "sdr-scraper",
+        "instance_count": 1,
+        "instance_size_slug": "professional-xs",
+        "git": {
+          "repo_clone_url": "https://github.com/Oncova/sdr-agent-gradient.git",
+          "branch": "main"
+        },
+        "build_command": "pip install -r requirements.txt",
+        "run_command": "python3 -c 'import time; print(\"sdr-scraper active\"); time.sleep(86400)'",
+        "environment_slug": "python",
+        "envs": [
+          {"key": "AGENT_ROLE", "value": "scraper"},
+          {"key": "AGENT_MODEL", "value": "openai-gpt-5.4"}
+        ]
+      },
+      {
+        "name": "sdr-pitcher",
+        "instance_count": 1,
+        "instance_size_slug": "professional-xs",
+        "git": {
+          "repo_clone_url": "https://github.com/Oncova/sdr-agent-gradient.git",
+          "branch": "main"
+        },
+        "build_command": "pip install -r requirements.txt",
+        "run_command": "python3 -c 'import time; print(\"sdr-pitcher active\"); time.sleep(86400)'",
+        "environment_slug": "python",
+        "envs": [
+          {"key": "AGENT_ROLE", "value": "pitcher"},
+          {"key": "AGENT_MODEL", "value": "openai-gpt-5.4"}
+        ]
+      },
+      {
+        "name": "sdr-closer",
+        "instance_count": 1,
+        "instance_size_slug": "professional-xs",
+        "git": {
+          "repo_clone_url": "https://github.com/Oncova/sdr-agent-gradient.git",
+          "branch": "main"
+        },
+        "build_command": "pip install -r requirements.txt",
+        "run_command": "python3 -c 'import time; print(\"sdr-closer active\"); time.sleep(86400)'",
+        "environment_slug": "python",
+        "envs": [
+          {"key": "AGENT_ROLE", "value": "closer"},
+          {"key": "AGENT_MODEL", "value": "openai-gpt-5.4"}
+        ]
+      }
+    ]
+  }
+}
