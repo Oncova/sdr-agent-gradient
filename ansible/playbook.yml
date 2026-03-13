@@ -1,0 +1,45 @@
+---
+- name: Configure DigitalOcean Droplet
+  hosts: all
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+    - name: Install dependencies
+      apt:
+        name: [curl, software-properties-common, jq, unzip]
+        state: present
+    - name: Add Python PPA
+      apt_repository:
+        repo: ppa:deadsnakes/ppa
+    - name: Install Python 3.11 and pip
+      apt:
+        name: [python3.11, python3-pip]
+        state: present
+    - name: Install Node.js 20
+      shell: curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -y nodejs
+      args:
+        creates: /usr/bin/node
+    - name: Install n8n
+      npm:
+        name: n8n
+        global: yes
+    - name: Install HashiCorp Vault
+      shell: |
+        curl -fsSL https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+        echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list
+        apt-get update && apt-get install -y vault
+      args:
+        creates: /usr/bin/vault
+    - name: Install gradient-adk
+      pip:
+        name: gradient-adk
+        executable: pip3
+    - name: Copy and run Vault init script
+      copy:
+        src: vault_init.sh
+        dest: /usr/local/bin/vault_init.sh
+        mode: '0755'
+    - name: Execute Vault Initialization
+      command: /usr/local/bin/vault_init.sh

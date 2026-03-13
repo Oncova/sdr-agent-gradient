@@ -1,0 +1,57 @@
+# ──────────────────────────────────────────────────────────
+# Gradient Agent Configuration
+# Agent: gpt54-sdr-brain
+# Deployment: production
+# ──────────────────────────────────────────────────────────
+
+agent:
+  name: gpt54-sdr-brain
+  entrypoint: main.py
+  runtime: python3.11
+
+deployment:
+  name: production
+  region: nyc3
+  scaling:
+    min_instances: 1
+    max_instances: 5
+    target_concurrency: 10
+
+mcps:
+  - name: hashicorp-vault-core
+    type: secret_management
+    required: true
+
+  - name: google-first-ops
+    type: workspace
+    required: true
+    depends_on:
+      - hashicorp-vault-core
+
+  - name: brightdata-evasion-engine
+    type: proxy
+    required: true
+    depends_on:
+      - hashicorp-vault-core
+
+  - name: voice-synth-engine
+    type: synthesis
+    required: true
+    depends_on:
+      - hashicorp-vault-core
+      - google-first-ops
+
+  - name: n8n-traffic-controller
+    type: orchestration
+    required: true
+    depends_on:
+      - hashicorp-vault-core
+
+environment:
+  VAULT_ADDR: "${VAULT_ADDR}"
+  VAULT_TOKEN: "${VAULT_TOKEN}"
+
+health_check:
+  path: /health
+  interval: 30s
+  timeout: 5s

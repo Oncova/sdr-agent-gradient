@@ -1,0 +1,28 @@
+# SDR Agent Gradient — Terraform state & secrets
+terraform.tfstate
+terraform.tfstate.backup
+*.tfvars
+.terraform/
+.terraform.lock.hcl
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vault dev tokens (never commit)
+vault-dev-token.txt
+
+# Environment secrets
+.env
+
+# doctl binary and config
+doctl
+doctl.tar.gz
+.doctl_config/

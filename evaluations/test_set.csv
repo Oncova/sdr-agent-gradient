@@ -1,0 +1,11 @@
+name,firm,practice_area,expected_subject_contains,expected_body_contains,expected_cta_present
+Carlos Mendoza,Mendoza Law PA,Personal Injury,Mendoza Law PA,Personal Injury,true
+Sarah Jenkins,Jenkins Defense Group,Criminal Defense,Jenkins Defense Group,Criminal Defense,true
+David Ross,Ross Legal Strategies,Personal Injury,Ross Legal Strategies,Personal Injury,true
+Elena Suarez,Suarez & Associates,Criminal Defense,Suarez & Associates,Criminal Defense,true
+Michael Chang,Chang Defense Counsel,Criminal Defense,Chang Defense Counsel,Criminal Defense,true
+Linda Ortiz,Ortiz Injury Firm,Personal Injury,Ortiz Injury Firm,Personal Injury,true
+James Patterson,Patterson Legal,Criminal Defense,Patterson Legal,Criminal Defense,true
+Vanessa Thorne,Thorne Law Office,Personal Injury,Thorne Law Office,Personal Injury,true
+Robert Black,Black Defense PLLC,Criminal Defense,Black Defense PLLC,Criminal Defense,true
+Alicia Gomez,Gomez Injury Lawyers,Personal Injury,Gomez Injury Lawyers,Personal Injury,true
