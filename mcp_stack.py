@@ -13,7 +13,7 @@ Contains all 25 MCP initialization functions:
   Batch 2 — Scraping & Enrichment:
     6.  Playwright MCP        — DOM extraction (PROXY FIX applied)
     7.  Enrichment MCP        — Apollo + PDL skip-tracing
-    8.  Telephony MCP         — Vapi SIP routing
+    8.  Telephony MCP         — ElevenLabs Conversational AI telephony
     9.  Temporal MCP          — Durable execution
     10. OneTrust MCP          — PII compliance audit
 
@@ -33,7 +33,7 @@ Contains all 25 MCP initialization functions:
     21. Mailreach MCP         — Deliverability rotation
     22. HubSpot MCP           — External CRM sync       (BENCHED)
     23. SendGrid MCP          — External SMTP routing    (BENCHED)
-    24. Lemon Squeezy MCP     — $99/week billing
+    24. Lemon Squeezy MCP     — $199/month billing
     25. Terraform MCP         — IaC provisioning         (WHITE-LABEL)
 """
 
@@ -146,22 +146,25 @@ def initialize_bright_data_mcp(vault_mcp):
 
 # ── 4. ElevenLabs MCP ────────────────────────────────────
 def initialize_elevenlabs_mcp(vault_mcp, workspace_mcp):
-    """Voice synthesis engine — generates $99/week trial pitches, streams to Drive."""
+    """Voice synthesis engine — generates personalized AI receptionist demos, streams to Drive."""
     el_creds = vault_mcp.execute_tool("fetch_secret", path="elevenlabs")
 
     eleven_mcp = MCPClient(
         name="voice-synth-engine",
-        capabilities=["text_to_speech"],
+        capabilities=["text_to_speech", "conversational_ai", "telephony"],
     )
 
     @eleven_mcp.register_tool(
-        description="Synthesize personalized $99 trial pitch and stream to Drive."
+        description="Synthesize personalized AI receptionist demo and stream to Drive."
     )
-    def synthesize_pitch(attorney_name: str, practice_area: str) -> str:
+    def synthesize_pitch(attorney_name: str, practice_area: str, specialty_tag: str = "PI") -> str:
+        if specialty_tag == "CD":
+            scenario = "arrest and bail emergencies — DUI, domestic violence, felony charges"
+        else:
+            scenario = "accident and injury emergencies — car crashes, slip-and-falls"
         script = (
-            f"Hi {attorney_name}, I saw you handle a lot of {practice_area} cases "
-            f"down here in South Florida. I've built an AI receptionist that handles "
-            f"intake 24/7. I'm offering a $99 per week trial."
+            f"Hi {attorney_name}, I handle {scenario} intake for law firms like yours. "
+            f"For $199 a month, I answer every call 24/7 and text you a triage brief instantly."
         )
         headers = {
             "xi-api-key": el_creds.get("api_key", ""),
@@ -288,29 +291,32 @@ def initialize_enrichment_mcp(vault_mcp):
     return enrich_mcp
 
 
-# ── 8. Telephony MCP (Vapi SIP Router) ──────────────────
+# ── 8. Telephony MCP (ElevenLabs Conversational AI) ─────
 def initialize_telephony_mcp(vault_mcp):
-    """SIP orchestration — links ElevenLabs to telecom for $99/week trials."""
-    vapi_creds = vault_mcp.execute_tool("fetch_secret", path="vapi_telephony")
+    """ElevenLabs Conversational AI — handles outbound/inbound demo calls for $199/month pitch."""
+    el_creds = vault_mcp.execute_tool("fetch_secret", path="elevenlabs")
 
-    vapi_mcp = MCPClient(
-        name="sip-telephony-router",
-        capabilities=["inbound_routing", "outbound_dialing", "agent_provisioning"],
+    telephony_mcp = MCPClient(
+        name="elevenlabs-telephony-router",
+        capabilities=["inbound_routing", "outbound_dialing", "conversational_ai"],
     )
 
-    @vapi_mcp.register_tool(
-        description="Deploy inbound SIP endpoint for the $99 ElevenLabs trial."
+    @telephony_mcp.register_tool(
+        description="Deploy ElevenLabs conversational AI agent for live attorney demo calls."
     )
-    def provision_trial_number(elevenlabs_voice_id: str, attorney_name: str) -> str:
-        return vapi_mcp.execute_internal("vapi.assistant.create", {
-            "api_key": vapi_creds["private_api_key"],
-            "name": f"Trial_{attorney_name.replace(' ', '_')}",
-            "voice": {"provider": "elevenlabs", "voiceId": elevenlabs_voice_id},
-            "model": {"provider": "openai", "model": "gpt-5.4"},
-            "systemPrompt": "You are a highly capable legal intake receptionist.",
+    def provision_demo_agent(elevenlabs_agent_id: str, attorney_name: str, specialty_tag: str = "PI") -> str:
+        if specialty_tag == "CD":
+            system_prompt = "You are an AI legal receptionist trained for criminal defense intake — arrests, bail, DUI."
+        else:
+            system_prompt = "You are an AI legal receptionist trained for personal injury intake — car accidents, slip-and-falls."
+        return telephony_mcp.execute_internal("elevenlabs.convai.agent.update", {
+            "api_key": el_creds.get("api_key", ""),
+            "agent_id": elevenlabs_agent_id,
+            "name": f"Demo_{attorney_name.replace(' ', '_')}",
+            "system_prompt": system_prompt,
         })
 
-    return vapi_mcp
+    return telephony_mcp
 
 
 # ── 9. Temporal MCP (Durable Execution) ─────────────────
@@ -629,7 +635,7 @@ def initialize_postmark_mcp(vault_mcp):
             "TemplateModel": {
                 "name": attorney_name,
                 "receipt_link": receipt_url,
-                "trial_price": "$99.00",
+                "subscription_price": "$199.00",
             },
             "MessageStream": "outbound-transactional",
         })
@@ -640,7 +646,7 @@ def initialize_postmark_mcp(vault_mcp):
 # ── 20. PandaDoc MCP (Contract Generation) ──────────────
 #    WHITE-LABEL ONLY — not active in core deployment
 def initialize_pandadoc_mcp(vault_mcp):
-    """Auto-generates $99/week trial agreements for e-signature."""
+    """Auto-generates $199/month subscription agreements for e-signature."""
     panda_creds = vault_mcp.execute_tool("fetch_secret", path="pandadoc_contracts")
 
     panda_mcp = MCPClient(
@@ -652,7 +658,7 @@ def initialize_pandadoc_mcp(vault_mcp):
     )
 
     @panda_mcp.register_tool(
-        description="Auto-generate the $99/week trial agreement when an attorney replies 'yes'."
+        description="Auto-generate the $199/month subscription agreement when an attorney replies 'yes'."
     )
     def generate_trial_agreement(attorney_name: str, attorney_email: str, firm_name: str) -> str:
         return panda_mcp.execute_internal("pandadoc.document.create", {
@@ -668,7 +674,7 @@ def initialize_pandadoc_mcp(vault_mcp):
             ],
             "tokens": [
                 {"name": "Firm_Name", "value": firm_name},
-                {"name": "Trial_Price", "value": "$99.00/week"},
+                {"name": "Trial_Price", "value": "$199.00/month"},
             ],
             "send_document": True,
         })
@@ -764,9 +770,9 @@ def initialize_sendgrid_mcp(vault_mcp):
     return sendgrid_mcp
 
 
-# ── 24. Lemon Squeezy MCP ($99/week Billing) ────────────
+# ── 24. Lemon Squeezy MCP ($199/month Billing) ────────────
 def initialize_lemon_squeezy_mcp(vault_mcp):
-    """Generates secure checkout links for the $99/week trial."""
+    """Generates secure checkout links for the $199/month subscription."""
     ls_creds = vault_mcp.execute_tool("fetch_secret", path="lemon_squeezy_billing")
 
     lemon_mcp = MCPClient(
@@ -778,7 +784,7 @@ def initialize_lemon_squeezy_mcp(vault_mcp):
     )
 
     @lemon_mcp.register_tool(
-        description="Generate a secure checkout link for the $99/week AI receptionist trial."
+        description="Generate a secure checkout link for the $199/month AI receptionist subscription."
     )
     def create_trial_checkout(attorney_email: str, attorney_name: str) -> str:
         checkout_data = lemon_mcp.execute_internal("lemonsqueezy.checkouts.create", {
@@ -787,7 +793,7 @@ def initialize_lemon_squeezy_mcp(vault_mcp):
             "checkout_data": {
                 "email": attorney_email,
                 "name": attorney_name,
-                "custom_price": 9900,
+                "custom_price": 19900,
             },
         })
         return checkout_data.get("url")

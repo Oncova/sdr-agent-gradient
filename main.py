@@ -6,14 +6,24 @@ sdr_agent = Agent(
     model="openai-gpt-5.4",
     system_prompt=(
         "You are an elite Sales Development Representative for Zuldeira Technologies. "
-        "Your objective is to pitch a $99/week trial for our natural-sounding AI voice receptionist "
-        "specifically to solo Personal Injury and Criminal Defense attorneys in South Florida.\n\n"
-        "Strict Execution Constraints:\n"
-        "1. The email body must be strictly under 100 words.\n"
-        "2. Highly personalize the message to the attorney's specific firm name and practice area.\n"
-        "3. End the email with a soft call-to-action asking if they are open to hearing a quick audio sample of the AI handling a mock intake call.\n"
-        "4. Output your response strictly as a JSON object containing exactly two keys: 'subject' and 'pitch_body'.\n"
-        "5. Do not include markdown formatting, code blocks, conversational filler, or any text outside the JSON."
+        "You send cold outreach emails to qualified Personal Injury (PI) and Criminal Defense (CD) attorneys.\n\n"
+        "THE OFFER:\n"
+        "- Product: A hyper-specialized AI receptionist exclusively trained for the attorney's practice area.\n"
+        "- Price: $199/month flat rate. NO trial. NO weekly billing. NO negotiation.\n"
+        "- Never mention $99, 'trial', 'free', or 'test period.'\n\n"
+        "SPECIALTY-SPECIFIC PITCH:\n"
+        "- If primary_specialty = 'PI': The AI is trained to triage accident and injury emergencies.\n"
+        "- If primary_specialty = 'CD': The AI is trained for arrest and bail emergencies.\n\n"
+        "CORE PITCH: 'Missing one intake call costs you thousands. For $199/month, your AI receptionist "
+        "works 24/7, extracts case details from every caller, and instantly texts you a triage brief.'\n\n"
+        "CTA: 'Call [TWILIO_DEMO_NUMBER] right now to hear how she handles a frantic client. "
+        "If you want her answering your overflow calls for $199/month, reply to this email.'\n\n"
+        "STRICT EXECUTION CONSTRAINTS:\n"
+        "1. Email body must be strictly under 120 words.\n"
+        "2. Highly personalize to the attorney's firm name and practice area.\n"
+        "3. Subject line must be urgent and specific to their specialty.\n"
+        "4. Output strictly as JSON: {\"subject\": \"...\", \"pitch_body\": \"...\"}\n"
+        "5. No markdown, no code blocks, no filler text."
     )
 )
 
@@ -22,12 +32,14 @@ def generate_sdr_pitch(payload: dict) -> dict:
     name = payload.get("name", "Attorney")
     firm = payload.get("firm", "the firm")
     practice_area = payload.get("practice_area", "law")
+    specialty_tag = payload.get("primary_specialty", "PI")
     
     prompt = (
         f"Prospect Details:\n"
         f"Name: {name}\n"
         f"Firm: {firm}\n"
-        f"Practice Area: {practice_area}"
+        f"Practice Area: {practice_area}\n"
+        f"Specialty Tag: {specialty_tag}"
     )
     
     response = sdr_agent.invoke(prompt)
@@ -37,7 +49,20 @@ def generate_sdr_pitch(payload: dict) -> dict:
         clean_json = raw_text.replace("```json", "").replace("```", "").strip()
         return json.loads(clean_json)
     except Exception:
+        if specialty_tag == "CD":
+            pain_point = "arrest and bail emergencies"
+            ai_desc = "trained for criminal defense intake — DUI, domestic violence, felony charges"
+        else:
+            pain_point = "accident and injury emergencies"
+            ai_desc = "trained for personal injury intake — car crashes, slip-and-falls, workplace injuries"
+        
         return {
-            "subject": f"AI Voice Receptionist Trial for {firm}",
-            "pitch_body": f"Hi {name}, I saw you handle {practice_area} cases in South Florida. I built an AI receptionist that handles intake 24/7, and I'm offering a $99/week trial. Would you be open to hearing a quick audio sample of it answering a call for {firm}?"
+            "subject": f"Your {firm} misses calls that are worth $10K+ — here's the fix",
+            "pitch_body": (
+                f"Hi {name}, a missed intake call from a {pain_point} caller costs your firm thousands. "
+                f"For $199/month, our AI receptionist answers 24/7, {ai_desc}. "
+                f"She extracts case details and instantly texts you a triage brief. "
+                f"Call [TWILIO_DEMO_NUMBER] right now to hear her handle a frantic client. "
+                f"If you want her answering your overflow calls for $199/month, just reply to this email."
+            )
         }

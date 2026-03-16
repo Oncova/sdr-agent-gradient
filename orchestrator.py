@@ -142,8 +142,8 @@ def orchestrate():
     print("  2 WHITE-LABEL ONLY (not active in core deployment)")
     print("  Total: 25 MCP scripts loaded")
     print("=" * 64)
-    print("  Target: Solo PI & Criminal Defense Attorneys, South FL")
-    print("  Offer: $99/week ElevenLabs AI Voice Receptionist Trial")
+    print("  Target: Solo PI & Criminal Defense Attorneys")
+    print("  Offer: $199/month Hyper-Specialized AI Legal Receptionist")
     print("=" * 64 + "\n")
 
     agent.run()

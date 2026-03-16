@@ -91,15 +91,22 @@ class Agent:
         name = details.get("name", "Attorney")
         firm = details.get("firm", "the firm")
         practice_area = details.get("practice_area", "law")
+        specialty = details.get("specialty_tag", "PI")
+
+        if specialty == "CD":
+            pain = "arrest and bail emergencies"
+        else:
+            pain = "accident and injury emergencies"
 
         pitch = {
-            "subject": f"Quick question for {firm}",
+            "subject": f"Your {firm} misses calls worth $10K+ — here's the fix",
             "pitch_body": (
-                f"Hi {name}, I noticed you handle {practice_area} cases in "
-                f"South Florida. I built an AI receptionist that answers intake "
-                f"calls 24/7 — no missed leads, no voicemail. I'm running a "
-                f"$99/week trial right now. Would you be open to hearing a quick "
-                f"audio sample of it handling a mock intake call for {firm}?"
+                f"Hi {name}, a missed intake call from a {pain} caller costs "
+                f"your firm thousands. For $199/month, our AI receptionist answers "
+                f"24/7 and instantly texts you a triage brief. "
+                f"Call [TWILIO_DEMO_NUMBER] to hear her handle a frantic client. "
+                f"If you want her answering your overflow calls for $199/month, "
+                f"reply to this email."
             ),
         }
         return AgentResponse(content=json.dumps(pitch))
@@ -215,10 +222,10 @@ def cli_evaluate(test_case_name: str, dataset_file: str, categories: list, succe
             if word_count < 100:
                 checks_passed += 1
 
-            # Check 5: CTA present (audio sample / mock intake)
+            # Check 5: CTA present ($199/month or Twilio demo)
             total_checks += 1
             if row.get("expected_cta_present", "true").lower() == "true":
-                cta_keywords = ["audio sample", "mock intake", "open to"]
+                cta_keywords = ["199/month", "twilio_demo_number", "reply to this email"]
                 if any(kw in result["pitch_body"].lower() for kw in cta_keywords):
                     checks_passed += 1
 

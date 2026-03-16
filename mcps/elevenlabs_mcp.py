@@ -1,7 +1,7 @@
 """
-ElevenLabs MCP — Core revenue-driving voice synthesis engine.
-Generates personalized $99/week trial pitches and streams
-the audio output directly into Google Drive.
+ElevenLabs MCP — Voice synthesis + Conversational AI telephony engine.
+Generates personalized AI receptionist demos for PI and CD attorneys
+and streams audio output directly into Google Drive.
 """
 
 import requests
@@ -13,17 +13,21 @@ def initialize_elevenlabs_mcp(vault_mcp, workspace_mcp):
 
     eleven_mcp = MCPClient(
         name="voice-synth-engine",
-        capabilities=["text_to_speech"],
+        capabilities=["text_to_speech", "conversational_ai", "telephony"],
     )
 
     @eleven_mcp.register_tool(
-        description="Synthesize personalized $99 trial pitch and stream to Drive."
+        description="Synthesize personalized AI receptionist demo and stream to Drive."
     )
-    def synthesize_pitch(attorney_name: str, practice_area: str) -> str:
+    def synthesize_pitch(attorney_name: str, practice_area: str, specialty_tag: str = "PI") -> str:
+        if specialty_tag == "CD":
+            scenario = "arrest and bail emergencies — DUI, domestic violence, felony charges"
+        else:
+            scenario = "accident and injury emergencies — car crashes, slip-and-falls"
+
         script = (
-            f"Hi {attorney_name}, I saw you handle a lot of {practice_area} cases "
-            f"down here in South Florida. I've built an AI receptionist that handles "
-            f"intake 24/7. I'm offering a $99 per week trial."
+            f"Hi {attorney_name}, I handle {scenario} intake for law firms like yours. "
+            f"For $199 a month, I answer every call 24/7 and text you a triage brief instantly."
         )
 
         headers = {
