@@ -3,12 +3,12 @@ set -e
 
 # ═══════════════════════════════════════════════════════════
 #  n8n Droplet Workflow Management Script
-#  Instance : https://prefer-one-welfare-derek.trycloudflare.com
+#  Instance : https://n8n.kaytral.com (Cloudflare Tunnel)
 #  Owner    : admin@caytral.com / Zuldeira2026!SDR
-#  DuckDNS  : n8n-oncova.duckdns.org → 104.236.66.184
+#  Tunnel   : n8n-kaytral (86d57e57-e85d-4eb1-be75-ca13c9bdf410)
 # ═══════════════════════════════════════════════════════════
 
-N8N_URL="https://prefer-one-welfare-derek.trycloudflare.com/api/v1"
+N8N_URL="https://n8n.kaytral.com/api/v1"
 API_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkMTA2YmMwNy01ODY4LTQ0ZDYtYmYwZC1lYzY0YjIwMGU1YzEiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiZTIxOGFmMmMtYjFmYy00YjU3LWFhMTEtY2VmY2Y0NzQ2OWNjIiwiaWF0IjoxNzczNjk1NjQ3LCJleHAiOjE3NzYyMjU2MDB9.vRhYYj2TPEQn1fbXN-pwc1Y724plnapbHZbErAOjrXM"
 HEADERS=(-H "X-N8N-API-KEY: $API_KEY" -H "Content-Type: application/json")
 
@@ -19,13 +19,11 @@ WF_ERROR="Dm0cx2eTqoBhVyzX"        # Failure Telemetry & Alerting Router
 
 echo "╔════════════════════════════════════════════════════════╗"
 echo "║   n8n Droplet Workflow Activation                     ║"
+echo "║   https://n8n.kaytral.com                             ║"
 echo "╚════════════════════════════════════════════════════════╝"
 echo ""
 
 echo "=== Activating workflows ==="
-echo "(Requires Gmail + Google Sheets OAuth2 credentials in n8n UI first)"
-echo ""
-
 for WF_ID in $WF_ERROR $WF_SCRAPER $WF_PITCHER; do
   echo -n "Activating $WF_ID... "
   curl -s -X POST "$N8N_URL/workflows/$WF_ID/activate" "${HEADERS[@]}" | python3 -c "
