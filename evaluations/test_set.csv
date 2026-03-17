@@ -1,11 +1,11 @@
-name,firm,practice_area,expected_subject_contains,expected_body_contains,expected_cta_present
-Carlos Mendoza,Mendoza Law PA,Personal Injury,Mendoza Law PA,Personal Injury,true
-Sarah Jenkins,Jenkins Defense Group,Criminal Defense,Jenkins Defense Group,Criminal Defense,true
-David Ross,Ross Legal Strategies,Personal Injury,Ross Legal Strategies,Personal Injury,true
-Elena Suarez,Suarez & Associates,Criminal Defense,Suarez & Associates,Criminal Defense,true
-Michael Chang,Chang Defense Counsel,Criminal Defense,Chang Defense Counsel,Criminal Defense,true
-Linda Ortiz,Ortiz Injury Firm,Personal Injury,Ortiz Injury Firm,Personal Injury,true
-James Patterson,Patterson Legal,Criminal Defense,Patterson Legal,Criminal Defense,true
-Vanessa Thorne,Thorne Law Office,Personal Injury,Thorne Law Office,Personal Injury,true
-Robert Black,Black Defense PLLC,Criminal Defense,Black Defense PLLC,Criminal Defense,true
-Alicia Gomez,Gomez Injury Lawyers,Personal Injury,Gomez Injury Lawyers,Personal Injury,true
+name,firm,practice_area,primary_specialty,expected_subject_contains,expected_body_contains,expected_cta_present
+Carlos Mendoza,Mendoza Law PA,Personal Injury,PI,Mendoza Law PA,personal injury,true
+Sarah Jenkins,Jenkins Defense Group,Criminal Defense,CD,Jenkins Defense Group,criminal defense,true
+David Ross,Ross Legal Strategies,Personal Injury,PI,Ross Legal Strategies,personal injury,true
+Elena Suarez,Suarez & Associates,Criminal Defense,CD,Suarez & Associates,criminal defense,true
+Michael Chang,Chang Defense Counsel,Criminal Defense,CD,Chang Defense Counsel,criminal defense,true
+Linda Ortiz,Ortiz Injury Firm,Personal Injury,PI,Ortiz Injury Firm,personal injury,true
+James Patterson,Patterson Legal,Criminal Defense,CD,Patterson Legal,criminal defense,true
+Vanessa Thorne,Thorne Law Office,Personal Injury,PI,Thorne Law Office,personal injury,true
+Robert Black,Black Defense PLLC,Criminal Defense,CD,Black Defense PLLC,criminal defense,true
+Alicia Gomez,Gomez Injury Lawyers,Personal Injury,PI,Gomez Injury Lawyers,personal injury,true

@@ -95,18 +95,21 @@ class Agent:
 
         if specialty == "CD":
             pain = "arrest and bail emergencies"
+            area_label = "criminal defense"
+            ai_desc = "trained for criminal defense intake — DUI, domestic violence, felony charges"
         else:
             pain = "accident and injury emergencies"
+            area_label = "personal injury"
+            ai_desc = "trained for personal injury intake — car crashes, slip-and-falls, workplace injuries"
 
         pitch = {
             "subject": f"Your {firm} misses calls worth $10K+ — here's the fix",
             "pitch_body": (
-                f"Hi {name}, a missed intake call from a {pain} caller costs "
+                f"Hi {name}, a missed {area_label} intake call costs "
                 f"your firm thousands. For $199/month, our AI receptionist answers "
-                f"24/7 and instantly texts you a triage brief. "
-                f"Call [TWILIO_DEMO_NUMBER] to hear her handle a frantic client. "
-                f"If you want her answering your overflow calls for $199/month, "
-                f"reply to this email."
+                f"24/7, {ai_desc}. She extracts case details and instantly texts "
+                f"you a triage brief. Call [TWILIO_DEMO_NUMBER] to hear her handle a "
+                f"frantic client. Reply to this email for $199/month."
             ),
         }
         return AgentResponse(content=json.dumps(pitch))
@@ -180,9 +183,10 @@ def cli_evaluate(test_case_name: str, dataset_file: str, categories: list, succe
                 "name": row["name"],
                 "firm": row["firm"],
                 "practice_area": row["practice_area"],
+                "primary_specialty": row.get("primary_specialty", "PI"),
             }
 
-            print(f"  [{i:02d}] Testing: {row['name']} @ {row['firm']}...", end=" ")
+            print(f"  [{i:02d}] Testing: {row['name']} @ {row['firm']} ({row.get('primary_specialty','PI')})...", end=" ")
 
             try:
                 result = ep(payload)

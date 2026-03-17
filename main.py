@@ -50,19 +50,19 @@ def generate_sdr_pitch(payload: dict) -> dict:
         return json.loads(clean_json)
     except Exception:
         if specialty_tag == "CD":
-            pain_point = "arrest and bail emergencies"
+            area_label = "criminal defense"
             ai_desc = "trained for criminal defense intake — DUI, domestic violence, felony charges"
         else:
-            pain_point = "accident and injury emergencies"
+            area_label = "personal injury"
             ai_desc = "trained for personal injury intake — car crashes, slip-and-falls, workplace injuries"
         
         return {
             "subject": f"Your {firm} misses calls that are worth $10K+ — here's the fix",
             "pitch_body": (
-                f"Hi {name}, a missed intake call from a {pain_point} caller costs your firm thousands. "
+                f"Hi {name}, a missed {area_label} intake call costs your firm thousands. "
                 f"For $199/month, our AI receptionist answers 24/7, {ai_desc}. "
                 f"She extracts case details and instantly texts you a triage brief. "
                 f"Call [TWILIO_DEMO_NUMBER] right now to hear her handle a frantic client. "
-                f"If you want her answering your overflow calls for $199/month, just reply to this email."
+                f"Reply to this email for $199/month."
             )
         }
