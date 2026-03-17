@@ -1,0 +1,907 @@
+{
+    "updatedAt": "2026-03-17T00:11:37.217Z",
+    "createdAt": "2026-03-16T23:55:42.771Z",
+    "id": "obX06V1KJlADyqby",
+    "name": "ElevenLabs Intake Triage Router",
+    "description": "ElevenLabs call intake triage router. Processes incoming AI receptionist calls, extracts caller data, classifies urgency into Critical/High/Routine tiers, and sends SMS alerts, CRM entries, and Slack notifications based on triage level.",
+    "active": true,
+    "isArchived": false,
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "elevenlabs-intake-router",
+                "responseMode": "onReceived",
+                "options": {}
+            },
+            "id": "webhook-trigger",
+            "name": "Webhook Trigger",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                240,
+                464
+            ],
+            "webhookId": "14aee6de-b8ab-4202-a645-f91800b92caa"
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "urgency-tier1",
+                                        "leftValue": "={{ $json.body.urgency_tier ?? $json.body.data_extraction?.urgency_tier ?? $json.urgency_tier }}",
+                                        "rightValue": "Tier_1_Critical",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "urgency-tier2",
+                                        "leftValue": "={{ $json.body.urgency_tier ?? $json.body.data_extraction?.urgency_tier ?? $json.urgency_tier }}",
+                                        "rightValue": "Tier_2_High",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "urgency-tier3",
+                                        "leftValue": "={{ $json.body.urgency_tier ?? $json.body.data_extraction?.urgency_tier ?? $json.urgency_tier }}",
+                                        "rightValue": "Tier_3_Routine",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true
+                        }
+                    ]
+                },
+                "options": {
+                    "fallbackOutput": "extra"
+                }
+            },
+            "id": "triage-switch",
+            "name": "Triage Router",
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3.2,
+            "position": [
+                704,
+                464
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpBasicAuth",
+                "sendBody": true,
+                "contentType": "form-urlencoded",
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "To",
+                            "value": "={{ $json.body.call?.dynamic_variables?.attorney_phone ?? $json.body.attorney_phone ?? '' }}"
+                        },
+                        {
+                            "name": "From",
+                            "value": "${TWILIO_PHONE_NUMBER}"
+                        },
+                        {
+                            "name": "Body",
+                            "value": "\ud83d\udea8 URGENT INTAKE: {{ $json.body.defendant_name ?? $json.body.data_extraction?.defendant_name }} is {{ $json.body.jail_status ?? $json.body.data_extraction?.jail_status }} for {{ $json.body.charge_description ?? $json.body.data_extraction?.charge_description }} in {{ $json.body.incident_location ?? $json.body.data_extraction?.incident_location }}. Caller: {{ $json.body.caller_name ?? $json.body.data_extraction?.caller_name }}. Call NOW: {{ $json.body.caller_phone ?? $json.body.data_extraction?.caller_phone }}."
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "tier1-sms-attorney",
+            "name": "T1: SMS Attorney URGENT",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                960,
+                208
+            ],
+            "disabled": true,
+            "notes": "Tier 1 Critical: SMS the attorney immediately"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $json.body.call?.dynamic_variables?.crm_webhook_url ?? 'https://n8n.kaytral.com/webhook/crm-placeholder' }}",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"contact_name\": \"{{ $json.body.caller_name ?? $json.body.data_extraction?.caller_name }}\",\n  \"defendant_name\": \"{{ $json.body.defendant_name ?? $json.body.data_extraction?.defendant_name }}\",\n  \"phone\": \"{{ $json.body.caller_phone ?? $json.body.data_extraction?.caller_phone }}\",\n  \"charge\": \"{{ $json.body.charge_description ?? $json.body.data_extraction?.charge_description }}\",\n  \"location\": \"{{ $json.body.incident_location ?? $json.body.data_extraction?.incident_location }}\",\n  \"jail_status\": \"{{ $json.body.jail_status ?? $json.body.data_extraction?.jail_status }}\",\n  \"court_date\": \"{{ $json.body.upcoming_court_date ?? $json.body.data_extraction?.upcoming_court_date ?? 'Unknown' }}\",\n  \"urgency\": \"CRITICAL\",\n  \"tag\": \"URGENT - IN CUSTODY\",\n  \"source\": \"ElevenLabs_Grace_AI\",\n  \"firm\": \"{{ $json.body.call?.dynamic_variables?.firm_name ?? '' }}\"\n}",
+                "options": {}
+            },
+            "id": "tier1-crm",
+            "name": "T1: CRM Contact + Matter",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1200,
+                208
+            ],
+            "notes": "Creates Contact & Matter tagged URGENT - IN CUSTODY"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $json.body.call?.dynamic_variables?.slack_webhook_url ?? 'https://hooks.slack.com/services/PLACEHOLDER' }}",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"text\": \"\ufffd\ufffd *EMERGENCY INTAKE* \ud83d\udea8\\n*Defendant:* {{ $json.body.defendant_name ?? $json.body.data_extraction?.defendant_name }}\\n*Charge:* {{ $json.body.charge_description ?? $json.body.data_extraction?.charge_description }}\\n*Status:* {{ $json.body.jail_status ?? $json.body.data_extraction?.jail_status }}\\n*Location:* {{ $json.body.incident_location ?? $json.body.data_extraction?.incident_location }}\\n*Caller:* {{ $json.body.caller_name ?? $json.body.data_extraction?.caller_name }} \u2014 {{ $json.body.caller_phone ?? $json.body.data_extraction?.caller_phone }}\\n*Court Date:* {{ $json.body.upcoming_court_date ?? $json.body.data_extraction?.upcoming_court_date ?? 'Unknown' }}\\n*Recording:* {{ $json.body.recording_url ?? 'N/A' }}\"\n}",
+                "options": {}
+            },
+            "id": "tier1-slack",
+            "name": "T1: Slack Emergency Alert",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1440,
+                208
+            ],
+            "notes": "Posts to #emergency-intake Slack channel"
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "id": "tier2-email-attorney",
+            "name": "T2: Email Attorney HIGH",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                960,
+                464
+            ],
+            "notes": "TODO: Wire to Gmail API. Original was emailSend node."
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpBasicAuth",
+                "sendBody": true,
+                "contentType": "form-urlencoded",
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "To",
+                            "value": "={{ $json.body.caller_phone ?? $json.body.data_extraction?.caller_phone ?? '' }}"
+                        },
+                        {
+                            "name": "From",
+                            "value": "${TWILIO_PHONE_NUMBER}"
+                        },
+                        {
+                            "name": "Body",
+                            "value": "Hi {{ $json.body.caller_name ?? $json.body.data_extraction?.caller_name }}, this is Grace from {{ $json.body.call?.dynamic_variables?.firm_name ?? 'the firm' }}. I have flagged {{ $json.body.defendant_name ?? $json.body.data_extraction?.defendant_name }}'s file regarding the {{ $json.body.charge_description ?? $json.body.data_extraction?.charge_description }} charge for immediate attorney review. Please have any warrant documents ready. We will call you shortly."
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "tier2-sms-caller",
+            "name": "T2: SMS Caller Reassurance",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1200,
+                464
+            ],
+            "disabled": true,
+            "notes": "Reassurance SMS to the caller"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $json.body.call?.dynamic_variables?.crm_webhook_url ?? 'https://n8n.kaytral.com/webhook/crm-placeholder' }}",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"contact_name\": \"{{ $json.body.caller_name ?? $json.body.data_extraction?.caller_name }}\",\n  \"defendant_name\": \"{{ $json.body.defendant_name ?? $json.body.data_extraction?.defendant_name }}\",\n  \"phone\": \"{{ $json.body.caller_phone ?? $json.body.data_extraction?.caller_phone }}\",\n  \"charge\": \"{{ $json.body.charge_description ?? $json.body.data_extraction?.charge_description }}\",\n  \"location\": \"{{ $json.body.incident_location ?? $json.body.data_extraction?.incident_location }}\",\n  \"jail_status\": \"{{ $json.body.jail_status ?? $json.body.data_extraction?.jail_status }}\",\n  \"urgency\": \"HIGH\",\n  \"tag\": \"High Priority - Callback Required\",\n  \"source\": \"ElevenLabs_Grace_AI\",\n  \"firm\": \"{{ $json.body.call?.dynamic_variables?.firm_name ?? '' }}\"\n}",
+                "options": {}
+            },
+            "id": "tier2-crm",
+            "name": "T2: CRM Lead HIGH",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1440,
+                464
+            ],
+            "notes": "CRM: High Priority - Callback Required"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $json.body.call?.dynamic_variables?.crm_webhook_url ?? 'https://n8n.kaytral.com/webhook/crm-placeholder' }}",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"contact_name\": \"{{ $json.body.caller_name ?? $json.body.data_extraction?.caller_name }}\",\n  \"defendant_name\": \"{{ $json.body.defendant_name ?? $json.body.data_extraction?.defendant_name }}\",\n  \"phone\": \"{{ $json.body.caller_phone ?? $json.body.data_extraction?.caller_phone }}\",\n  \"charge\": \"{{ $json.body.charge_description ?? $json.body.data_extraction?.charge_description }}\",\n  \"location\": \"{{ $json.body.incident_location ?? $json.body.data_extraction?.incident_location }}\",\n  \"jail_status\": \"{{ $json.body.jail_status ?? $json.body.data_extraction?.jail_status }}\",\n  \"urgency\": \"ROUTINE\",\n  \"tag\": \"Pending Consultation\",\n  \"source\": \"ElevenLabs_Grace_AI\",\n  \"firm\": \"{{ $json.body.call?.dynamic_variables?.firm_name ?? '' }}\"\n}",
+                "options": {}
+            },
+            "id": "tier3-crm",
+            "name": "T3: CRM Lead Routine",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                960,
+                720
+            ],
+            "notes": "CRM: Pending Consultation"
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "id": "tier3-email-paralegal",
+            "name": "T3: Email Paralegal Team",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                1200,
+                720
+            ],
+            "notes": "TODO: Wire to Gmail API. Original was emailSend node."
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpBasicAuth",
+                "sendBody": true,
+                "contentType": "form-urlencoded",
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "To",
+                            "value": "={{ $json.body.caller_phone ?? $json.body.data_extraction?.caller_phone ?? '' }}"
+                        },
+                        {
+                            "name": "From",
+                            "value": "${TWILIO_PHONE_NUMBER}"
+                        },
+                        {
+                            "name": "Body",
+                            "value": "Thank you for contacting {{ $json.body.call?.dynamic_variables?.firm_name ?? 'the firm' }}. {{ $json.body.call?.dynamic_variables?.attorney_name ?? 'Our team' }}'s office has received your information regarding the {{ $json.body.charge_description ?? $json.body.data_extraction?.charge_description }} matter. We will be in touch during business hours."
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "tier3-sms-caller",
+            "name": "T3: SMS Caller Confirmation",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1440,
+                720
+            ],
+            "disabled": true,
+            "notes": "Simple confirmation \u2014 no booking link"
+        }
+    ],
+    "connections": {
+        "Webhook Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Triage Router",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Triage Router": {
+            "main": [
+                [
+                    {
+                        "node": "T1: SMS Attorney URGENT",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "T2: Email Attorney HIGH",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "T3: CRM Lead Routine",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "T1: SMS Attorney URGENT": {
+            "main": [
+                [
+                    {
+                        "node": "T1: CRM Contact + Matter",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "T1: CRM Contact + Matter": {
+            "main": [
+                [
+                    {
+                        "node": "T1: Slack Emergency Alert",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "T2: Email Attorney HIGH": {
+            "main": [
+                [
+                    {
+                        "node": "T2: SMS Caller Reassurance",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "T2: SMS Caller Reassurance": {
+            "main": [
+                [
+                    {
+                        "node": "T2: CRM Lead HIGH",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "T3: CRM Lead Routine": {
+            "main": [
+                [
+                    {
+                        "node": "T3: Email Paralegal Team",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "T3: Email Paralegal Team": {
+            "main": [
+                [
+                    {
+                        "node": "T3: SMS Caller Confirmation",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "callerPolicy": "workflowsFromSameOwner",
+        "availableInMCP": true
+    },
+    "staticData": null,
+    "meta": null,
+    "pinData": {},
+    "versionId": "75cf033b-4689-41c5-8cc5-ceb3a3919d06",
+    "activeVersionId": "75cf033b-4689-41c5-8cc5-ceb3a3919d06",
+    "versionCounter": 22,
+    "triggerCount": 1,
+    "shared": [
+        {
+            "updatedAt": "2026-03-16T23:55:42.784Z",
+            "createdAt": "2026-03-16T23:55:42.784Z",
+            "role": "workflow:owner",
+            "workflowId": "obX06V1KJlADyqby",
+            "projectId": "NqjI6XxWLWQF6vbD",
+            "project": {
+                "updatedAt": "2026-03-16T21:13:36.549Z",
+                "createdAt": "2026-03-16T21:05:42.222Z",
+                "id": "NqjI6XxWLWQF6vbD",
+                "name": "Admin SDR <admin@caytral.com>",
+                "type": "personal",
+                "icon": null,
+                "description": null,
+                "creatorId": "d106bc07-5868-44d6-bf0d-ec64b200e5c1"
+            }
+        }
+    ],
+    "tags": [],
+    "activeVersion": {
+        "updatedAt": "2026-03-17T00:11:37.223Z",
+        "createdAt": "2026-03-17T00:11:37.223Z",
+        "versionId": "75cf033b-4689-41c5-8cc5-ceb3a3919d06",
+        "workflowId": "obX06V1KJlADyqby",
+        "nodes": [
+            {
+                "parameters": {
+                    "httpMethod": "POST",
+                    "path": "elevenlabs-intake-router",
+                    "responseMode": "onReceived",
+                    "options": {}
+                },
+                "id": "webhook-trigger",
+                "name": "Webhook Trigger",
+                "type": "n8n-nodes-base.webhook",
+                "typeVersion": 2,
+                "position": [
+                    240,
+                    464
+                ],
+                "webhookId": "14aee6de-b8ab-4202-a645-f91800b92caa"
+            },
+            {
+                "parameters": {
+                    "rules": {
+                        "values": [
+                            {
+                                "conditions": {
+                                    "options": {
+                                        "caseSensitive": true,
+                                        "leftValue": "",
+                                        "typeValidation": "strict"
+                                    },
+                                    "conditions": [
+                                        {
+                                            "id": "urgency-tier1",
+                                            "leftValue": "={{ $json.body.urgency_tier ?? $json.body.data_extraction?.urgency_tier ?? $json.urgency_tier }}",
+                                            "rightValue": "Tier_1_Critical",
+                                            "operator": {
+                                                "type": "string",
+                                                "operation": "equals"
+                                            }
+                                        }
+                                    ],
+                                    "combinator": "and"
+                                },
+                                "renameOutput": true
+                            },
+                            {
+                                "conditions": {
+                                    "options": {
+                                        "caseSensitive": true,
+                                        "leftValue": "",
+                                        "typeValidation": "strict"
+                                    },
+                                    "conditions": [
+                                        {
+                                            "id": "urgency-tier2",
+                                            "leftValue": "={{ $json.body.urgency_tier ?? $json.body.data_extraction?.urgency_tier ?? $json.urgency_tier }}",
+                                            "rightValue": "Tier_2_High",
+                                            "operator": {
+                                                "type": "string",
+                                                "operation": "equals"
+                                            }
+                                        }
+                                    ],
+                                    "combinator": "and"
+                                },
+                                "renameOutput": true
+                            },
+                            {
+                                "conditions": {
+                                    "options": {
+                                        "caseSensitive": true,
+                                        "leftValue": "",
+                                        "typeValidation": "strict"
+                                    },
+                                    "conditions": [
+                                        {
+                                            "id": "urgency-tier3",
+                                            "leftValue": "={{ $json.body.urgency_tier ?? $json.body.data_extraction?.urgency_tier ?? $json.urgency_tier }}",
+                                            "rightValue": "Tier_3_Routine",
+                                            "operator": {
+                                                "type": "string",
+                                                "operation": "equals"
+                                            }
+                                        }
+                                    ],
+                                    "combinator": "and"
+                                },
+                                "renameOutput": true
+                            }
+                        ]
+                    },
+                    "options": {
+                        "fallbackOutput": "extra"
+                    }
+                },
+                "id": "triage-switch",
+                "name": "Triage Router",
+                "type": "n8n-nodes-base.switch",
+                "typeVersion": 3.2,
+                "position": [
+                    704,
+                    464
+                ]
+            },
+            {
+                "parameters": {
+                    "method": "POST",
+                    "url": "https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json",
+                    "authentication": "genericCredentialType",
+                    "genericAuthType": "httpBasicAuth",
+                    "sendBody": true,
+                    "contentType": "form-urlencoded",
+                    "bodyParameters": {
+                        "parameters": [
+                            {
+                                "name": "To",
+                                "value": "={{ $json.body.call?.dynamic_variables?.attorney_phone ?? $json.body.attorney_phone ?? '' }}"
+                            },
+                            {
+                                "name": "From",
+                                "value": "${TWILIO_PHONE_NUMBER}"
+                            },
+                            {
+                                "name": "Body",
+                                "value": "\ud83d\udea8 URGENT INTAKE: {{ $json.body.defendant_name ?? $json.body.data_extraction?.defendant_name }} is {{ $json.body.jail_status ?? $json.body.data_extraction?.jail_status }} for {{ $json.body.charge_description ?? $json.body.data_extraction?.charge_description }} in {{ $json.body.incident_location ?? $json.body.data_extraction?.incident_location }}. Caller: {{ $json.body.caller_name ?? $json.body.data_extraction?.caller_name }}. Call NOW: {{ $json.body.caller_phone ?? $json.body.data_extraction?.caller_phone }}."
+                            }
+                        ]
+                    },
+                    "options": {}
+                },
+                "id": "tier1-sms-attorney",
+                "name": "T1: SMS Attorney URGENT",
+                "type": "n8n-nodes-base.httpRequest",
+                "typeVersion": 4.2,
+                "position": [
+                    960,
+                    208
+                ],
+                "disabled": true,
+                "notes": "Tier 1 Critical: SMS the attorney immediately"
+            },
+            {
+                "parameters": {
+                    "method": "POST",
+                    "url": "={{ $json.body.call?.dynamic_variables?.crm_webhook_url ?? 'https://n8n.kaytral.com/webhook/crm-placeholder' }}",
+                    "sendBody": true,
+                    "specifyBody": "json",
+                    "jsonBody": "={\n  \"contact_name\": \"{{ $json.body.caller_name ?? $json.body.data_extraction?.caller_name }}\",\n  \"defendant_name\": \"{{ $json.body.defendant_name ?? $json.body.data_extraction?.defendant_name }}\",\n  \"phone\": \"{{ $json.body.caller_phone ?? $json.body.data_extraction?.caller_phone }}\",\n  \"charge\": \"{{ $json.body.charge_description ?? $json.body.data_extraction?.charge_description }}\",\n  \"location\": \"{{ $json.body.incident_location ?? $json.body.data_extraction?.incident_location }}\",\n  \"jail_status\": \"{{ $json.body.jail_status ?? $json.body.data_extraction?.jail_status }}\",\n  \"court_date\": \"{{ $json.body.upcoming_court_date ?? $json.body.data_extraction?.upcoming_court_date ?? 'Unknown' }}\",\n  \"urgency\": \"CRITICAL\",\n  \"tag\": \"URGENT - IN CUSTODY\",\n  \"source\": \"ElevenLabs_Grace_AI\",\n  \"firm\": \"{{ $json.body.call?.dynamic_variables?.firm_name ?? '' }}\"\n}",
+                    "options": {}
+                },
+                "id": "tier1-crm",
+                "name": "T1: CRM Contact + Matter",
+                "type": "n8n-nodes-base.httpRequest",
+                "typeVersion": 4.2,
+                "position": [
+                    1200,
+                    208
+                ],
+                "notes": "Creates Contact & Matter tagged URGENT - IN CUSTODY"
+            },
+            {
+                "parameters": {
+                    "method": "POST",
+                    "url": "={{ $json.body.call?.dynamic_variables?.slack_webhook_url ?? 'https://hooks.slack.com/services/PLACEHOLDER' }}",
+                    "sendBody": true,
+                    "specifyBody": "json",
+                    "jsonBody": "={\n  \"text\": \"\ufffd\ufffd *EMERGENCY INTAKE* \ud83d\udea8\\n*Defendant:* {{ $json.body.defendant_name ?? $json.body.data_extraction?.defendant_name }}\\n*Charge:* {{ $json.body.charge_description ?? $json.body.data_extraction?.charge_description }}\\n*Status:* {{ $json.body.jail_status ?? $json.body.data_extraction?.jail_status }}\\n*Location:* {{ $json.body.incident_location ?? $json.body.data_extraction?.incident_location }}\\n*Caller:* {{ $json.body.caller_name ?? $json.body.data_extraction?.caller_name }} \u2014 {{ $json.body.caller_phone ?? $json.body.data_extraction?.caller_phone }}\\n*Court Date:* {{ $json.body.upcoming_court_date ?? $json.body.data_extraction?.upcoming_court_date ?? 'Unknown' }}\\n*Recording:* {{ $json.body.recording_url ?? 'N/A' }}\"\n}",
+                    "options": {}
+                },
+                "id": "tier1-slack",
+                "name": "T1: Slack Emergency Alert",
+                "type": "n8n-nodes-base.httpRequest",
+                "typeVersion": 4.2,
+                "position": [
+                    1440,
+                    208
+                ],
+                "notes": "Posts to #emergency-intake Slack channel"
+            },
+            {
+                "parameters": {
+                    "options": {}
+                },
+                "id": "tier2-email-attorney",
+                "name": "T2: Email Attorney HIGH",
+                "type": "n8n-nodes-base.set",
+                "typeVersion": 3.4,
+                "position": [
+                    960,
+                    464
+                ],
+                "notes": "TODO: Wire to Gmail API. Original was emailSend node."
+            },
+            {
+                "parameters": {
+                    "method": "POST",
+                    "url": "https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json",
+                    "authentication": "genericCredentialType",
+                    "genericAuthType": "httpBasicAuth",
+                    "sendBody": true,
+                    "contentType": "form-urlencoded",
+                    "bodyParameters": {
+                        "parameters": [
+                            {
+                                "name": "To",
+                                "value": "={{ $json.body.caller_phone ?? $json.body.data_extraction?.caller_phone ?? '' }}"
+                            },
+                            {
+                                "name": "From",
+                                "value": "${TWILIO_PHONE_NUMBER}"
+                            },
+                            {
+                                "name": "Body",
+                                "value": "Hi {{ $json.body.caller_name ?? $json.body.data_extraction?.caller_name }}, this is Grace from {{ $json.body.call?.dynamic_variables?.firm_name ?? 'the firm' }}. I have flagged {{ $json.body.defendant_name ?? $json.body.data_extraction?.defendant_name }}'s file regarding the {{ $json.body.charge_description ?? $json.body.data_extraction?.charge_description }} charge for immediate attorney review. Please have any warrant documents ready. We will call you shortly."
+                            }
+                        ]
+                    },
+                    "options": {}
+                },
+                "id": "tier2-sms-caller",
+                "name": "T2: SMS Caller Reassurance",
+                "type": "n8n-nodes-base.httpRequest",
+                "typeVersion": 4.2,
+                "position": [
+                    1200,
+                    464
+                ],
+                "disabled": true,
+                "notes": "Reassurance SMS to the caller"
+            },
+            {
+                "parameters": {
+                    "method": "POST",
+                    "url": "={{ $json.body.call?.dynamic_variables?.crm_webhook_url ?? 'https://n8n.kaytral.com/webhook/crm-placeholder' }}",
+                    "sendBody": true,
+                    "specifyBody": "json",
+                    "jsonBody": "={\n  \"contact_name\": \"{{ $json.body.caller_name ?? $json.body.data_extraction?.caller_name }}\",\n  \"defendant_name\": \"{{ $json.body.defendant_name ?? $json.body.data_extraction?.defendant_name }}\",\n  \"phone\": \"{{ $json.body.caller_phone ?? $json.body.data_extraction?.caller_phone }}\",\n  \"charge\": \"{{ $json.body.charge_description ?? $json.body.data_extraction?.charge_description }}\",\n  \"location\": \"{{ $json.body.incident_location ?? $json.body.data_extraction?.incident_location }}\",\n  \"jail_status\": \"{{ $json.body.jail_status ?? $json.body.data_extraction?.jail_status }}\",\n  \"urgency\": \"HIGH\",\n  \"tag\": \"High Priority - Callback Required\",\n  \"source\": \"ElevenLabs_Grace_AI\",\n  \"firm\": \"{{ $json.body.call?.dynamic_variables?.firm_name ?? '' }}\"\n}",
+                    "options": {}
+                },
+                "id": "tier2-crm",
+                "name": "T2: CRM Lead HIGH",
+                "type": "n8n-nodes-base.httpRequest",
+                "typeVersion": 4.2,
+                "position": [
+                    1440,
+                    464
+                ],
+                "notes": "CRM: High Priority - Callback Required"
+            },
+            {
+                "parameters": {
+                    "method": "POST",
+                    "url": "={{ $json.body.call?.dynamic_variables?.crm_webhook_url ?? 'https://n8n.kaytral.com/webhook/crm-placeholder' }}",
+                    "sendBody": true,
+                    "specifyBody": "json",
+                    "jsonBody": "={\n  \"contact_name\": \"{{ $json.body.caller_name ?? $json.body.data_extraction?.caller_name }}\",\n  \"defendant_name\": \"{{ $json.body.defendant_name ?? $json.body.data_extraction?.defendant_name }}\",\n  \"phone\": \"{{ $json.body.caller_phone ?? $json.body.data_extraction?.caller_phone }}\",\n  \"charge\": \"{{ $json.body.charge_description ?? $json.body.data_extraction?.charge_description }}\",\n  \"location\": \"{{ $json.body.incident_location ?? $json.body.data_extraction?.incident_location }}\",\n  \"jail_status\": \"{{ $json.body.jail_status ?? $json.body.data_extraction?.jail_status }}\",\n  \"urgency\": \"ROUTINE\",\n  \"tag\": \"Pending Consultation\",\n  \"source\": \"ElevenLabs_Grace_AI\",\n  \"firm\": \"{{ $json.body.call?.dynamic_variables?.firm_name ?? '' }}\"\n}",
+                    "options": {}
+                },
+                "id": "tier3-crm",
+                "name": "T3: CRM Lead Routine",
+                "type": "n8n-nodes-base.httpRequest",
+                "typeVersion": 4.2,
+                "position": [
+                    960,
+                    720
+                ],
+                "notes": "CRM: Pending Consultation"
+            },
+            {
+                "parameters": {
+                    "options": {}
+                },
+                "id": "tier3-email-paralegal",
+                "name": "T3: Email Paralegal Team",
+                "type": "n8n-nodes-base.set",
+                "typeVersion": 3.4,
+                "position": [
+                    1200,
+                    720
+                ],
+                "notes": "TODO: Wire to Gmail API. Original was emailSend node."
+            },
+            {
+                "parameters": {
+                    "method": "POST",
+                    "url": "https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json",
+                    "authentication": "genericCredentialType",
+                    "genericAuthType": "httpBasicAuth",
+                    "sendBody": true,
+                    "contentType": "form-urlencoded",
+                    "bodyParameters": {
+                        "parameters": [
+                            {
+                                "name": "To",
+                                "value": "={{ $json.body.caller_phone ?? $json.body.data_extraction?.caller_phone ?? '' }}"
+                            },
+                            {
+                                "name": "From",
+                                "value": "${TWILIO_PHONE_NUMBER}"
+                            },
+                            {
+                                "name": "Body",
+                                "value": "Thank you for contacting {{ $json.body.call?.dynamic_variables?.firm_name ?? 'the firm' }}. {{ $json.body.call?.dynamic_variables?.attorney_name ?? 'Our team' }}'s office has received your information regarding the {{ $json.body.charge_description ?? $json.body.data_extraction?.charge_description }} matter. We will be in touch during business hours."
+                            }
+                        ]
+                    },
+                    "options": {}
+                },
+                "id": "tier3-sms-caller",
+                "name": "T3: SMS Caller Confirmation",
+                "type": "n8n-nodes-base.httpRequest",
+                "typeVersion": 4.2,
+                "position": [
+                    1440,
+                    720
+                ],
+                "disabled": true,
+                "notes": "Simple confirmation \u2014 no booking link"
+            }
+        ],
+        "connections": {
+            "Webhook Trigger": {
+                "main": [
+                    [
+                        {
+                            "node": "Triage Router",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "Triage Router": {
+                "main": [
+                    [
+                        {
+                            "node": "T1: SMS Attorney URGENT",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "T2: Email Attorney HIGH",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "T3: CRM Lead Routine",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "T1: SMS Attorney URGENT": {
+                "main": [
+                    [
+                        {
+                            "node": "T1: CRM Contact + Matter",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "T1: CRM Contact + Matter": {
+                "main": [
+                    [
+                        {
+                            "node": "T1: Slack Emergency Alert",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "T2: Email Attorney HIGH": {
+                "main": [
+                    [
+                        {
+                            "node": "T2: SMS Caller Reassurance",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "T2: SMS Caller Reassurance": {
+                "main": [
+                    [
+                        {
+                            "node": "T2: CRM Lead HIGH",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "T3: CRM Lead Routine": {
+                "main": [
+                    [
+                        {
+                            "node": "T3: Email Paralegal Team",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "T3: Email Paralegal Team": {
+                "main": [
+                    [
+                        {
+                            "node": "T3: SMS Caller Confirmation",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            }
+        },
+        "authors": "Admin SDR",
+        "name": null,
+        "description": null,
+        "autosaved": false,
+        "workflowPublishHistory": [
+            {
+                "createdAt": "2026-03-17T00:11:37.604Z",
+                "id": 32,
+                "workflowId": "obX06V1KJlADyqby",
+                "versionId": "75cf033b-4689-41c5-8cc5-ceb3a3919d06",
+                "event": "activated",
+                "userId": "d106bc07-5868-44d6-bf0d-ec64b200e5c1"
+            }
+        ]
+    }
+}
