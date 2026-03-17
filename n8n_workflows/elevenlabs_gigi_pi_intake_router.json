@@ -1,0 +1,789 @@
+{
+    "updatedAt": "2026-03-17T01:02:53.924Z",
+    "createdAt": "2026-03-17T01:01:49.631Z",
+    "id": "hRAfXdShkRCReNYN",
+    "name": "ElevenLabs Gigi PI Intake Router",
+    "description": null,
+    "active": true,
+    "isArchived": false,
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "elevenlabs-gigi-intake",
+                "options": {}
+            },
+            "id": "pi-webhook",
+            "name": "Webhook Trigger",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                240,
+                464
+            ],
+            "webhookId": "2134a2e1-6e0f-4666-9f6d-205d94119898"
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": false,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "tier1",
+                                        "leftValue": "={{ $json.body.urgency_tier ?? $json.body.extracted_data?.urgency_tier ?? $json.urgency_tier ?? '' }}",
+                                        "rightValue": "Tier 1",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": false,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "tier2",
+                                        "leftValue": "={{ $json.body.urgency_tier ?? $json.body.extracted_data?.urgency_tier ?? $json.urgency_tier ?? '' }}",
+                                        "rightValue": "Tier 2",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": false,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "tier3",
+                                        "leftValue": "={{ $json.body.urgency_tier ?? $json.body.extracted_data?.urgency_tier ?? $json.urgency_tier ?? '' }}",
+                                        "rightValue": "Tier 3",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true
+                        }
+                    ]
+                },
+                "options": {
+                    "fallbackOutput": "extra"
+                }
+            },
+            "id": "pi-triage",
+            "name": "PI Triage Router",
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3.2,
+            "position": [
+                512,
+                464
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpBasicAuth",
+                "sendBody": true,
+                "contentType": "form-urlencoded",
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "To",
+                            "value": "={{ $json.body.dynamic_variables?.attorney_phone ?? $json.body.call?.dynamic_variables?.attorney_phone ?? '' }}"
+                        },
+                        {
+                            "name": "From",
+                            "value": "${TWILIO_PHONE_NUMBER}"
+                        },
+                        {
+                            "name": "Body",
+                            "value": "\ud83d\udea8 VIP PI LEAD from Gigi: {{ $json.body.client_name ?? $json.body.extracted_data?.client_name }} was injured ({{ $json.body.hospital_status ?? $json.body.extracted_data?.hospital_status }}). Incident: {{ $json.body.incident_details ?? $json.body.extracted_data?.incident_details }}. Call ASAP: {{ $json.body.client_phone ?? $json.body.extracted_data?.client_phone }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "t1-sms-attorney",
+            "name": "T1: SMS Attorney VIP",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                768,
+                208
+            ],
+            "disabled": true,
+            "notes": "Tier 1 Code Red: Immediate SMS to attorney cell"
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "id": "t1-email",
+            "name": "T1: Email Intake Brief",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                1008,
+                208
+            ],
+            "notes": "TODO: Wire to Gmail API. Sends full intake brief + recording"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $json.body.dynamic_variables?.crm_webhook_url ?? $json.body.call?.dynamic_variables?.crm_webhook_url ?? 'https://n8n.kaytral.com/webhook/crm-placeholder' }}",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"client_name\": \"{{ $json.body.client_name ?? $json.body.extracted_data?.client_name }}\",\n  \"client_phone\": \"{{ $json.body.client_phone ?? $json.body.extracted_data?.client_phone }}\",\n  \"incident_details\": \"{{ $json.body.incident_details ?? $json.body.extracted_data?.incident_details }}\",\n  \"incident_date\": \"{{ $json.body.incident_date ?? $json.body.extracted_data?.incident_date ?? 'Unknown' }}\",\n  \"injury_description\": \"{{ $json.body.injury_description ?? $json.body.extracted_data?.injury_description }}\",\n  \"hospital_status\": \"{{ $json.body.hospital_status ?? $json.body.extracted_data?.hospital_status }}\",\n  \"insurance_info\": \"{{ $json.body.insurance_info ?? $json.body.extracted_data?.insurance_info }}\",\n  \"urgency\": \"HIGH_PRIORITY\",\n  \"tag\": \"VIP - Code Red\",\n  \"source\": \"ElevenLabs_Gigi_AI\",\n  \"firm\": \"{{ $json.body.dynamic_variables?.firm_name ?? $json.body.call?.dynamic_variables?.firm_name ?? '' }}\"\n}",
+                "options": {}
+            },
+            "id": "t1-crm",
+            "name": "T1: CRM Push (High Priority)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1248,
+                208
+            ],
+            "notes": "CRM: Clio/LeadDocket/Filevine \u2192 High Priority"
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "id": "t2-email",
+            "name": "T2: Email Attorney",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                768,
+                464
+            ],
+            "notes": "Tier 2: Standard intake email. No SMS to attorney (prevents notification fatigue)"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpBasicAuth",
+                "sendBody": true,
+                "contentType": "form-urlencoded",
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "To",
+                            "value": "={{ $json.body.client_phone ?? $json.body.extracted_data?.client_phone ?? '' }}"
+                        },
+                        {
+                            "name": "From",
+                            "value": "${TWILIO_PHONE_NUMBER}"
+                        },
+                        {
+                            "name": "Body",
+                            "value": "Hi {{ $json.body.client_name ?? $json.body.extracted_data?.client_name }}, this is Gigi from {{ $json.body.dynamic_variables?.firm_name ?? $json.body.call?.dynamic_variables?.firm_name ?? 'the firm' }}. I've sent your accident details to the attorney. We will review your file and call you back shortly. Please do not give a recorded statement to the insurance company until we speak!"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "t2-sms-caller",
+            "name": "T2: SMS Caller Reassurance",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1008,
+                464
+            ],
+            "disabled": true,
+            "notes": "Reassurance SMS + insurance statement warning"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $json.body.dynamic_variables?.crm_webhook_url ?? $json.body.call?.dynamic_variables?.crm_webhook_url ?? 'https://n8n.kaytral.com/webhook/crm-placeholder' }}",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"client_name\": \"{{ $json.body.client_name ?? $json.body.extracted_data?.client_name }}\",\n  \"client_phone\": \"{{ $json.body.client_phone ?? $json.body.extracted_data?.client_phone }}\",\n  \"incident_details\": \"{{ $json.body.incident_details ?? $json.body.extracted_data?.incident_details }}\",\n  \"injury_description\": \"{{ $json.body.injury_description ?? $json.body.extracted_data?.injury_description }}\",\n  \"hospital_status\": \"{{ $json.body.hospital_status ?? $json.body.extracted_data?.hospital_status }}\",\n  \"insurance_info\": \"{{ $json.body.insurance_info ?? $json.body.extracted_data?.insurance_info }}\",\n  \"urgency\": \"STANDARD\",\n  \"tag\": \"New Lead\",\n  \"source\": \"ElevenLabs_Gigi_AI\",\n  \"firm\": \"{{ $json.body.dynamic_variables?.firm_name ?? $json.body.call?.dynamic_variables?.firm_name ?? '' }}\"\n}",
+                "options": {}
+            },
+            "id": "t2-crm",
+            "name": "T2: CRM Push (New Lead)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1248,
+                464
+            ],
+            "notes": "CRM: Standard New Lead"
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "id": "t3-log",
+            "name": "T3: Log to Sheets",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                768,
+                720
+            ],
+            "notes": "Tier 3: Log for ROI report \u2014 shows attorney how many junk calls AI filtered"
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "id": "t3-digest",
+            "name": "T3: Daily Digest Queue",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                1008,
+                720
+            ],
+            "notes": "Queues for 5 PM daily digest email instead of instant alert"
+        }
+    ],
+    "connections": {
+        "Webhook Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "PI Triage Router",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "PI Triage Router": {
+            "main": [
+                [
+                    {
+                        "node": "T1: SMS Attorney VIP",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "T2: Email Attorney",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "T3: Log to Sheets",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "T1: SMS Attorney VIP": {
+            "main": [
+                [
+                    {
+                        "node": "T1: Email Intake Brief",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "T1: Email Intake Brief": {
+            "main": [
+                [
+                    {
+                        "node": "T1: CRM Push (High Priority)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "T2: Email Attorney": {
+            "main": [
+                [
+                    {
+                        "node": "T2: SMS Caller Reassurance",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "T2: SMS Caller Reassurance": {
+            "main": [
+                [
+                    {
+                        "node": "T2: CRM Push (New Lead)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "T3: Log to Sheets": {
+            "main": [
+                [
+                    {
+                        "node": "T3: Daily Digest Queue",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "callerPolicy": "workflowsFromSameOwner",
+        "availableInMCP": false
+    },
+    "staticData": null,
+    "meta": null,
+    "pinData": {},
+    "versionId": "4881fbb8-882b-429f-a6dc-ff8cc355a778",
+    "activeVersionId": "4881fbb8-882b-429f-a6dc-ff8cc355a778",
+    "versionCounter": 5,
+    "triggerCount": 1,
+    "shared": [
+        {
+            "updatedAt": "2026-03-17T01:01:49.635Z",
+            "createdAt": "2026-03-17T01:01:49.635Z",
+            "role": "workflow:owner",
+            "workflowId": "hRAfXdShkRCReNYN",
+            "projectId": "NqjI6XxWLWQF6vbD",
+            "project": {
+                "updatedAt": "2026-03-16T21:13:36.549Z",
+                "createdAt": "2026-03-16T21:05:42.222Z",
+                "id": "NqjI6XxWLWQF6vbD",
+                "name": "Admin SDR <admin@caytral.com>",
+                "type": "personal",
+                "icon": null,
+                "description": null,
+                "creatorId": "d106bc07-5868-44d6-bf0d-ec64b200e5c1"
+            }
+        }
+    ],
+    "tags": [],
+    "activeVersion": {
+        "updatedAt": "2026-03-17T01:03:08.000Z",
+        "createdAt": "2026-03-17T01:02:53.926Z",
+        "versionId": "4881fbb8-882b-429f-a6dc-ff8cc355a778",
+        "workflowId": "hRAfXdShkRCReNYN",
+        "nodes": [
+            {
+                "parameters": {
+                    "httpMethod": "POST",
+                    "path": "elevenlabs-gigi-intake",
+                    "options": {}
+                },
+                "id": "pi-webhook",
+                "name": "Webhook Trigger",
+                "type": "n8n-nodes-base.webhook",
+                "typeVersion": 2,
+                "position": [
+                    240,
+                    464
+                ],
+                "webhookId": "2134a2e1-6e0f-4666-9f6d-205d94119898"
+            },
+            {
+                "parameters": {
+                    "rules": {
+                        "values": [
+                            {
+                                "conditions": {
+                                    "options": {
+                                        "caseSensitive": false,
+                                        "leftValue": "",
+                                        "typeValidation": "strict"
+                                    },
+                                    "conditions": [
+                                        {
+                                            "id": "tier1",
+                                            "leftValue": "={{ $json.body.urgency_tier ?? $json.body.extracted_data?.urgency_tier ?? $json.urgency_tier ?? '' }}",
+                                            "rightValue": "Tier 1",
+                                            "operator": {
+                                                "type": "string",
+                                                "operation": "equals"
+                                            }
+                                        }
+                                    ],
+                                    "combinator": "and"
+                                },
+                                "renameOutput": true
+                            },
+                            {
+                                "conditions": {
+                                    "options": {
+                                        "caseSensitive": false,
+                                        "leftValue": "",
+                                        "typeValidation": "strict"
+                                    },
+                                    "conditions": [
+                                        {
+                                            "id": "tier2",
+                                            "leftValue": "={{ $json.body.urgency_tier ?? $json.body.extracted_data?.urgency_tier ?? $json.urgency_tier ?? '' }}",
+                                            "rightValue": "Tier 2",
+                                            "operator": {
+                                                "type": "string",
+                                                "operation": "equals"
+                                            }
+                                        }
+                                    ],
+                                    "combinator": "and"
+                                },
+                                "renameOutput": true
+                            },
+                            {
+                                "conditions": {
+                                    "options": {
+                                        "caseSensitive": false,
+                                        "leftValue": "",
+                                        "typeValidation": "strict"
+                                    },
+                                    "conditions": [
+                                        {
+                                            "id": "tier3",
+                                            "leftValue": "={{ $json.body.urgency_tier ?? $json.body.extracted_data?.urgency_tier ?? $json.urgency_tier ?? '' }}",
+                                            "rightValue": "Tier 3",
+                                            "operator": {
+                                                "type": "string",
+                                                "operation": "equals"
+                                            }
+                                        }
+                                    ],
+                                    "combinator": "and"
+                                },
+                                "renameOutput": true
+                            }
+                        ]
+                    },
+                    "options": {
+                        "fallbackOutput": "extra"
+                    }
+                },
+                "id": "pi-triage",
+                "name": "PI Triage Router",
+                "type": "n8n-nodes-base.switch",
+                "typeVersion": 3.2,
+                "position": [
+                    512,
+                    464
+                ]
+            },
+            {
+                "parameters": {
+                    "method": "POST",
+                    "url": "https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json",
+                    "authentication": "genericCredentialType",
+                    "genericAuthType": "httpBasicAuth",
+                    "sendBody": true,
+                    "contentType": "form-urlencoded",
+                    "bodyParameters": {
+                        "parameters": [
+                            {
+                                "name": "To",
+                                "value": "={{ $json.body.dynamic_variables?.attorney_phone ?? $json.body.call?.dynamic_variables?.attorney_phone ?? '' }}"
+                            },
+                            {
+                                "name": "From",
+                                "value": "${TWILIO_PHONE_NUMBER}"
+                            },
+                            {
+                                "name": "Body",
+                                "value": "\ud83d\udea8 VIP PI LEAD from Gigi: {{ $json.body.client_name ?? $json.body.extracted_data?.client_name }} was injured ({{ $json.body.hospital_status ?? $json.body.extracted_data?.hospital_status }}). Incident: {{ $json.body.incident_details ?? $json.body.extracted_data?.incident_details }}. Call ASAP: {{ $json.body.client_phone ?? $json.body.extracted_data?.client_phone }}"
+                            }
+                        ]
+                    },
+                    "options": {}
+                },
+                "id": "t1-sms-attorney",
+                "name": "T1: SMS Attorney VIP",
+                "type": "n8n-nodes-base.httpRequest",
+                "typeVersion": 4.2,
+                "position": [
+                    768,
+                    208
+                ],
+                "disabled": true,
+                "notes": "Tier 1 Code Red: Immediate SMS to attorney cell"
+            },
+            {
+                "parameters": {
+                    "options": {}
+                },
+                "id": "t1-email",
+                "name": "T1: Email Intake Brief",
+                "type": "n8n-nodes-base.set",
+                "typeVersion": 3.4,
+                "position": [
+                    1008,
+                    208
+                ],
+                "notes": "TODO: Wire to Gmail API. Sends full intake brief + recording"
+            },
+            {
+                "parameters": {
+                    "method": "POST",
+                    "url": "={{ $json.body.dynamic_variables?.crm_webhook_url ?? $json.body.call?.dynamic_variables?.crm_webhook_url ?? 'https://n8n.kaytral.com/webhook/crm-placeholder' }}",
+                    "sendBody": true,
+                    "specifyBody": "json",
+                    "jsonBody": "={\n  \"client_name\": \"{{ $json.body.client_name ?? $json.body.extracted_data?.client_name }}\",\n  \"client_phone\": \"{{ $json.body.client_phone ?? $json.body.extracted_data?.client_phone }}\",\n  \"incident_details\": \"{{ $json.body.incident_details ?? $json.body.extracted_data?.incident_details }}\",\n  \"incident_date\": \"{{ $json.body.incident_date ?? $json.body.extracted_data?.incident_date ?? 'Unknown' }}\",\n  \"injury_description\": \"{{ $json.body.injury_description ?? $json.body.extracted_data?.injury_description }}\",\n  \"hospital_status\": \"{{ $json.body.hospital_status ?? $json.body.extracted_data?.hospital_status }}\",\n  \"insurance_info\": \"{{ $json.body.insurance_info ?? $json.body.extracted_data?.insurance_info }}\",\n  \"urgency\": \"HIGH_PRIORITY\",\n  \"tag\": \"VIP - Code Red\",\n  \"source\": \"ElevenLabs_Gigi_AI\",\n  \"firm\": \"{{ $json.body.dynamic_variables?.firm_name ?? $json.body.call?.dynamic_variables?.firm_name ?? '' }}\"\n}",
+                    "options": {}
+                },
+                "id": "t1-crm",
+                "name": "T1: CRM Push (High Priority)",
+                "type": "n8n-nodes-base.httpRequest",
+                "typeVersion": 4.2,
+                "position": [
+                    1248,
+                    208
+                ],
+                "notes": "CRM: Clio/LeadDocket/Filevine \u2192 High Priority"
+            },
+            {
+                "parameters": {
+                    "options": {}
+                },
+                "id": "t2-email",
+                "name": "T2: Email Attorney",
+                "type": "n8n-nodes-base.set",
+                "typeVersion": 3.4,
+                "position": [
+                    768,
+                    464
+                ],
+                "notes": "Tier 2: Standard intake email. No SMS to attorney (prevents notification fatigue)"
+            },
+            {
+                "parameters": {
+                    "method": "POST",
+                    "url": "https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json",
+                    "authentication": "genericCredentialType",
+                    "genericAuthType": "httpBasicAuth",
+                    "sendBody": true,
+                    "contentType": "form-urlencoded",
+                    "bodyParameters": {
+                        "parameters": [
+                            {
+                                "name": "To",
+                                "value": "={{ $json.body.client_phone ?? $json.body.extracted_data?.client_phone ?? '' }}"
+                            },
+                            {
+                                "name": "From",
+                                "value": "${TWILIO_PHONE_NUMBER}"
+                            },
+                            {
+                                "name": "Body",
+                                "value": "Hi {{ $json.body.client_name ?? $json.body.extracted_data?.client_name }}, this is Gigi from {{ $json.body.dynamic_variables?.firm_name ?? $json.body.call?.dynamic_variables?.firm_name ?? 'the firm' }}. I've sent your accident details to the attorney. We will review your file and call you back shortly. Please do not give a recorded statement to the insurance company until we speak!"
+                            }
+                        ]
+                    },
+                    "options": {}
+                },
+                "id": "t2-sms-caller",
+                "name": "T2: SMS Caller Reassurance",
+                "type": "n8n-nodes-base.httpRequest",
+                "typeVersion": 4.2,
+                "position": [
+                    1008,
+                    464
+                ],
+                "disabled": true,
+                "notes": "Reassurance SMS + insurance statement warning"
+            },
+            {
+                "parameters": {
+                    "method": "POST",
+                    "url": "={{ $json.body.dynamic_variables?.crm_webhook_url ?? $json.body.call?.dynamic_variables?.crm_webhook_url ?? 'https://n8n.kaytral.com/webhook/crm-placeholder' }}",
+                    "sendBody": true,
+                    "specifyBody": "json",
+                    "jsonBody": "={\n  \"client_name\": \"{{ $json.body.client_name ?? $json.body.extracted_data?.client_name }}\",\n  \"client_phone\": \"{{ $json.body.client_phone ?? $json.body.extracted_data?.client_phone }}\",\n  \"incident_details\": \"{{ $json.body.incident_details ?? $json.body.extracted_data?.incident_details }}\",\n  \"injury_description\": \"{{ $json.body.injury_description ?? $json.body.extracted_data?.injury_description }}\",\n  \"hospital_status\": \"{{ $json.body.hospital_status ?? $json.body.extracted_data?.hospital_status }}\",\n  \"insurance_info\": \"{{ $json.body.insurance_info ?? $json.body.extracted_data?.insurance_info }}\",\n  \"urgency\": \"STANDARD\",\n  \"tag\": \"New Lead\",\n  \"source\": \"ElevenLabs_Gigi_AI\",\n  \"firm\": \"{{ $json.body.dynamic_variables?.firm_name ?? $json.body.call?.dynamic_variables?.firm_name ?? '' }}\"\n}",
+                    "options": {}
+                },
+                "id": "t2-crm",
+                "name": "T2: CRM Push (New Lead)",
+                "type": "n8n-nodes-base.httpRequest",
+                "typeVersion": 4.2,
+                "position": [
+                    1248,
+                    464
+                ],
+                "notes": "CRM: Standard New Lead"
+            },
+            {
+                "parameters": {
+                    "options": {}
+                },
+                "id": "t3-log",
+                "name": "T3: Log to Sheets",
+                "type": "n8n-nodes-base.set",
+                "typeVersion": 3.4,
+                "position": [
+                    768,
+                    720
+                ],
+                "notes": "Tier 3: Log for ROI report \u2014 shows attorney how many junk calls AI filtered"
+            },
+            {
+                "parameters": {
+                    "options": {}
+                },
+                "id": "t3-digest",
+                "name": "T3: Daily Digest Queue",
+                "type": "n8n-nodes-base.set",
+                "typeVersion": 3.4,
+                "position": [
+                    1008,
+                    720
+                ],
+                "notes": "Queues for 5 PM daily digest email instead of instant alert"
+            }
+        ],
+        "connections": {
+            "Webhook Trigger": {
+                "main": [
+                    [
+                        {
+                            "node": "PI Triage Router",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "PI Triage Router": {
+                "main": [
+                    [
+                        {
+                            "node": "T1: SMS Attorney VIP",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "T2: Email Attorney",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ],
+                    [
+                        {
+                            "node": "T3: Log to Sheets",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "T1: SMS Attorney VIP": {
+                "main": [
+                    [
+                        {
+                            "node": "T1: Email Intake Brief",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "T1: Email Intake Brief": {
+                "main": [
+                    [
+                        {
+                            "node": "T1: CRM Push (High Priority)",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "T2: Email Attorney": {
+                "main": [
+                    [
+                        {
+                            "node": "T2: SMS Caller Reassurance",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "T2: SMS Caller Reassurance": {
+                "main": [
+                    [
+                        {
+                            "node": "T2: CRM Push (New Lead)",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            },
+            "T3: Log to Sheets": {
+                "main": [
+                    [
+                        {
+                            "node": "T3: Daily Digest Queue",
+                            "type": "main",
+                            "index": 0
+                        }
+                    ]
+                ]
+            }
+        },
+        "authors": "Admin SDR",
+        "name": "Version 4881fbb8",
+        "description": "",
+        "autosaved": true,
+        "workflowPublishHistory": [
+            {
+                "createdAt": "2026-03-17T01:03:08.616Z",
+                "id": 33,
+                "workflowId": "hRAfXdShkRCReNYN",
+                "versionId": "4881fbb8-882b-429f-a6dc-ff8cc355a778",
+                "event": "activated",
+                "userId": "d106bc07-5868-44d6-bf0d-ec64b200e5c1"
+            }
+        ]
+    }
+}
