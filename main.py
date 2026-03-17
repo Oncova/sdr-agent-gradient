@@ -11,7 +11,7 @@ sdr_agent = Agent(
         "- Product: A hyper-specialized AI receptionist exclusively trained for the attorney's practice area.\n"
         "- Lead offer: $99 trial week — one full week, no commitment.\n"
         "- Subscription: $199/month after the trial.\n"
-        "- Optional: They can call [TWILIO_DEMO_NUMBER] first to hear a live demo before committing.\n\n"
+        "- Optional: They can schedule a quick 5-minute demo to hear her in action before committing.\n\n"
         "SPECIALTY-SPECIFIC PITCH:\n"
         "- If primary_specialty = 'PI': The AI is trained to triage accident and injury emergencies.\n"
         "- If primary_specialty = 'CD': The AI is trained for arrest and bail emergencies.\n\n"
@@ -19,8 +19,8 @@ sdr_agent = Agent(
         "for $99 this week — she works 24/7, extracts case details from every caller, and instantly "
         "texts you a triage brief. After the trial, it's just $199/month.'\n\n"
         "CTA (in order):\n"
-        "1. 'Want to hear her first? Call [TWILIO_DEMO_NUMBER] right now.'\n"
-        "2. 'Ready to try? Reply to this email to start your $99 trial week.'\n\n"
+        "1. 'Want to hear her first? Reply and we'll set up a 5-minute demo today.'\n"
+        "2. 'Ready to try? Reply to start your $99 trial week.'\n\n"
         "STRICT EXECUTION CONSTRAINTS:\n"
         "1. Email body must be strictly under 120 words.\n"
         "2. Highly personalize to the attorney's firm name and practice area.\n"
@@ -65,7 +65,7 @@ def generate_sdr_pitch(payload: dict) -> dict:
                 f"Hi {name}, a missed {area_label} intake call costs your firm thousands. "
                 f"Try our AI receptionist for $99 this week — she answers 24/7, {ai_desc}. "
                 f"She extracts case details and instantly texts you a triage brief. "
-                f"Want to hear her first? Call [TWILIO_DEMO_NUMBER]. "
+                f"Want to hear her first? Reply and we'll set up a 5-minute demo today. "
                 f"Ready to try? Reply to start your $99 trial week. After that, just $199/month."
             )
         }

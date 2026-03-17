@@ -108,8 +108,8 @@ class Agent:
                 f"Hi {name}, a missed {area_label} intake call costs "
                 f"your firm thousands. Try our AI receptionist for $99 this week — "
                 f"she answers 24/7, {ai_desc}. She extracts case details and instantly "
-                f"texts you a triage brief. Want to hear her first? Call [TWILIO_DEMO_NUMBER]. "
-                f"Reply to start your $99 trial week. After that, just $199/month."
+                f"texts you a triage brief. Want to hear her first? Reply and we'll set up a "
+                f"5-minute demo today. Reply to start your $99 trial week. After that, just $199/month."
             ),
         }
         return AgentResponse(content=json.dumps(pitch))
@@ -229,7 +229,7 @@ def cli_evaluate(test_case_name: str, dataset_file: str, categories: list, succe
             # Check 5: CTA present ($199/month or Twilio demo)
             total_checks += 1
             if row.get("expected_cta_present", "true").lower() == "true":
-                cta_keywords = ["99", "trial", "twilio_demo_number", "199/month"]
+                cta_keywords = ["99", "trial", "demo", "199/month"]
                 if any(kw in result["pitch_body"].lower() for kw in cta_keywords):
                     checks_passed += 1
 
