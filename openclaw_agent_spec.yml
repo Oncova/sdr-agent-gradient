@@ -2,7 +2,7 @@
 # Deployed as isolated workspaces on a single DigitalOcean App Platform deployment
 # Runtime: OpenClaw SDK | Model: openai-gpt-5.4
 # Niche: Personal Injury + Criminal Defense Attorneys
-# Offer: $199/month hyper-specialized AI Receptionist
+# Offer: $99 Trial Week → $199/month AI Receptionist
 
 version: "1.0"
 platform: digitalocean-app-platform
@@ -91,7 +91,7 @@ agents:
       max_instances: 3
 
   # ─────────────────────────────────────────────────────
-  #  Agent 3: SDR Pitcher — $199/month Email Generator
+  #  Agent 3: SDR Pitcher — $99 Trial Week Email Generator
   # ─────────────────────────────────────────────────────
   - name: sdr-pitcher
     model: openai-gpt-5.4
@@ -101,8 +101,9 @@ agents:
 
       THE OFFER:
       - Product: A hyper-specialized AI receptionist exclusively trained for the attorney's practice area.
-      - Price: $199/month flat rate. NO trial. NO weekly billing. NO negotiation.
-      - Never mention $99, "trial", "free", or "test period."
+      - Lead offer: $99 trial week — one full week, no commitment.
+      - Subscription: $199/month after the trial.
+      - Optional: They can schedule a quick 5-minute demo to hear her in action before committing.
 
       SPECIALTY-SPECIFIC PITCH (use the lead's primary_specialty tag):
       - If primary_specialty = "PI": Emphasize the AI is specifically trained to triage accident
@@ -114,12 +115,13 @@ agents:
         details (charges, jail location, bond amount) and instantly texts/emails a triage brief.
 
       CORE PITCH LINE (must appear in every email):
-      "Missing one intake call costs you thousands. For $199/month, your AI receptionist
-      works 24/7, extracts case details from every caller, and instantly texts you a triage brief."
+      "Missing one intake call costs you thousands. Try our AI receptionist for $99 this week —
+      she works 24/7, extracts case details from every caller, and instantly texts you a triage brief.
+      After the trial, it's just $199/month."
 
-      CALL TO ACTION (must appear in every email):
-      "Call [TWILIO_DEMO_NUMBER] right now to hear how she handles a frantic client.
-      If you want her answering your overflow calls for $199/month, reply to this email."
+      CALL TO ACTION (in order, must appear in every email):
+      1. "Want to hear her first? Reply and we'll set up a 5-minute demo today."
+      2. "Ready to try? Reply to start your $99 trial week."
 
       STRICT EXECUTION CONSTRAINTS:
       1. Email body must be strictly under 120 words.
@@ -149,8 +151,8 @@ agents:
 
       YOUR MISSION:
       - Monitor email reply sentiment from pitched attorneys.
-      - Warm replies → send Lemon Squeezy checkout link for $199/month subscription.
-      - Lukewarm replies → send one follow-up emphasizing the missed-call cost pain point.
+      - Warm replies → send Lemon Squeezy checkout link for $99 trial week.
+      - Lukewarm replies → send one follow-up emphasizing the missed-call cost pain point + $99 trial offer.
       - Cold/no reply → one final follow-up after 72 hours, then archive.
 
       FOLLOW-UP RULES:
@@ -158,13 +160,13 @@ agents:
       - Preserve the "PI" or "CD" tag in all communications.
       - If PI: reference accident/injury intake in follow-ups.
       - If CD: reference arrest/bail intake in follow-ups.
-      - Never mention $99, "trial", or "test period." Price is always $199/month.
+      - Lead with $99 trial week. Subscription converts to $199/month after trial.
 
       CHECKOUT TRIGGER:
       When an attorney expresses interest (replies positively, asks questions, or says "yes"):
-      - Send the Lemon Squeezy $199/month checkout link.
-      - Include: "Once you subscribe, your AI receptionist goes live within 24 hours,
-        trained exclusively for [PI/CD] intake at [firm_name]."
+      - Send the Lemon Squeezy $99 trial week checkout link.
+      - Include: "Once you start your trial, your AI receptionist goes live within 24 hours,
+        trained exclusively for [PI/CD] intake at [firm_name]. After the trial, it's just $199/month."
 
       TELEPHONY (ElevenLabs):
       - Route warm leads to ElevenLabs conversational AI for a live demo call.
@@ -198,4 +200,3 @@ shared:
   environment:
     GOOGLE_FIRST_MANDATE: "true"
     N8N_ORCHESTRATION: "enabled"
-    TWILIO_DEMO_NUMBER: "${TWILIO_DEMO_NUMBER}"
