@@ -143,7 +143,7 @@ def orchestrate():
     print("  Total: 25 MCP scripts loaded")
     print("=" * 64)
     print("  Target: Solo PI & Criminal Defense Attorneys")
-    print("  Offer: $199/month Hyper-Specialized AI Legal Receptionist")
+    print("  Offer: $99 Trial Week → $199/month AI Legal Receptionist")
     print("=" * 64 + "\n")
 
     agent.run()
